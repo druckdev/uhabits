@@ -62,6 +62,7 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
     }
 
     fun setListener(presenter: ShowHabitPresenter) {
+        binding.targetCard.setListener(presenter.targetCardPresenter)
         binding.scoreCard.setListener(presenter.scoreCardPresenter)
         binding.historyCard.setListener(presenter.historyCardPresenter)
         binding.barCard.setListener(presenter.barCardPresenter)

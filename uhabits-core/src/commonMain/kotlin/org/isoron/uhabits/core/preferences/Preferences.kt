@@ -68,6 +68,11 @@ open class Preferences(private val storage: Storage) {
         set(order) {
             storage.putString("pref_default_secondary_order", order.name)
         }
+    open var targetCardSpinnerPosition: Int
+        get() = min(1, max(0, storage.getInt("pref_target_view_interval", 0)))
+        set(position) {
+            storage.putInt("pref_target_view_interval", position)
+        }
     open var scoreCardSpinnerPosition: Int
         get() = min(4, max(0, storage.getInt("pref_score_view_interval", 1)))
         set(position) {

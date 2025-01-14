@@ -53,6 +53,7 @@ class TargetWidget(
         val data = TargetCardPresenter.buildState(
             habit = habit,
             firstWeekday = prefs.firstWeekdayInt,
+            spinnerPosition = prefs.targetCardSpinnerPosition,
             theme = WidgetTheme()
         )
         chart.setColor(WidgetTheme().color(habit.color).toInt())

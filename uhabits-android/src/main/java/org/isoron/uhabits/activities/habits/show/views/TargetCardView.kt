@@ -22,22 +22,43 @@ import android.content.Context
 import android.content.res.Resources
 import android.util.AttributeSet
 import android.view.LayoutInflater
+import android.view.View
+import android.widget.AdapterView
 import android.widget.LinearLayout
 import org.isoron.platform.gui.toInt
 import org.isoron.uhabits.R
+import org.isoron.uhabits.core.ui.screens.habits.show.views.TargetCardPresenter
 import org.isoron.uhabits.core.ui.screens.habits.show.views.TargetCardState
 import org.isoron.uhabits.databinding.ShowHabitTargetBinding
 
 class TargetCardView(context: Context, attrs: AttributeSet) : LinearLayout(context, attrs) {
     private val binding = ShowHabitTargetBinding.inflate(LayoutInflater.from(context), this)
+
     fun setState(state: TargetCardState) {
         val androidColor = state.theme.color(state.color).toInt()
+        binding.spinner.setSelection(state.spinnerPosition)
         binding.targetChart.setValues(state.values)
         binding.targetChart.setTargets(state.targets)
         binding.targetChart.setLabels(state.intervals.map { intervalToLabel(resources, it) })
         binding.title.setTextColor(androidColor)
         binding.targetChart.setColor(androidColor)
         postInvalidate()
+    }
+
+    fun setListener(presenter: TargetCardPresenter) {
+        binding.spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                presenter.onSpinnerPosition(position)
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+            }
+        }
     }
 
     companion object {
