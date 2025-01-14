@@ -62,6 +62,11 @@
         <item>@string/decrement</item>
     </string-array>
 
+    <string-array name="targetTypeNames" translatable="false">
+        <item>@string/sum</item>
+        <item>@string/average</item>
+    </string-array>
+
     <string-array name="strengthIntervalNames" translatable="false">
         <item>@string/day</item>
         <item>@string/week</item>

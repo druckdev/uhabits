@@ -80,6 +80,11 @@ class ShowHabitPresenter(
         screen = screen
     )
 
+    val targetCardPresenter = TargetCardPresenter(
+        preferences = preferences,
+        screen = screen
+    )
+
     val scoreCardPresenter = ScoreCardPresenter(
         preferences = preferences,
         screen = screen
@@ -108,6 +113,7 @@ class ShowHabitPresenter(
                     habit = habit
                 ),
                 target = TargetCardPresenter.buildState(
+                    spinnerPosition = preferences.targetCardSpinnerPosition,
                     habit = habit,
                     firstWeekday = preferences.firstWeekdayInt,
                     theme = theme
@@ -145,6 +151,7 @@ class ShowHabitPresenter(
 
     interface Screen :
         BarCardPresenter.Screen,
+        TargetCardPresenter.Screen,
         ScoreCardPresenter.Screen,
         HistoryCardPresenter.Screen
 }
