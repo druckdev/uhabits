@@ -72,6 +72,10 @@ class TargetCardPresenter(
                 truncateField = TruncateField.WEEK_NUMBER,
                 firstWeekday = firstWeekday
             ).firstOrNull()?.value ?: 0
+            val daysThisWeek = today.truncate(
+                field = DateUtils.TruncateField.WEEK_NUMBER,
+                firstWeekday = firstWeekday
+            ).daysUntil(today) + 1
 
             val valueThisMonth = entries.groupedSum(
                 truncateField = TruncateField.MONTH,
@@ -81,6 +85,10 @@ class TargetCardPresenter(
             val skippedDaysThisMonth = entries.countSkippedDays(
                 truncateField = TruncateField.MONTH
             ).firstOrNull()?.value ?: 0
+            val daysThisMonth = today.truncate(
+                field = DateUtils.TruncateField.MONTH,
+                firstWeekday = firstWeekday
+            ).daysUntil(today) + 1
 
             val valueThisQuarter = entries.groupedSum(
                 truncateField = TruncateField.QUARTER,
@@ -90,6 +98,10 @@ class TargetCardPresenter(
             val skippedDaysThisQuarter = entries.countSkippedDays(
                 truncateField = TruncateField.QUARTER
             ).firstOrNull()?.value ?: 0
+            val daysThisQuarter = today.truncate(
+                field = DateUtils.TruncateField.QUARTER,
+                firstWeekday = firstWeekday
+            ).daysUntil(today) + 1
 
             val valueThisYear = entries.groupedSum(
                 truncateField = TruncateField.YEAR,
@@ -99,6 +111,10 @@ class TargetCardPresenter(
             val skippedDaysThisYear = entries.countSkippedDays(
                 truncateField = TruncateField.YEAR
             ).firstOrNull()?.value ?: 0
+            val daysThisYear = today.truncate(
+                field = DateUtils.TruncateField.YEAR,
+                firstWeekday = firstWeekday
+            ).daysUntil(today) + 1
 
             val daysInMonth = today.monthLength
             val daysInWeek = 7
@@ -141,18 +157,34 @@ class TargetCardPresenter(
             targetThisYear = max(0.0, targetThisYear - dailyTarget * skippedDaysThisYear)
 
             val values = mutableListOf<Double>()
-            if (habit.frequency.denominator <= 1) values.add(valueToday / 1e3)
-            if (habit.frequency.denominator <= 7) values.add(valueThisWeek / 1e3)
-            values.add(valueThisMonth / 1e3)
-            values.add(valueThisQuarter / 1e3)
-            values.add(valueThisYear / 1e3)
+            if (spinnerPosition == 0) {
+                if (habit.frequency.denominator <= 1) values.add(valueToday / 1e3)
+                if (habit.frequency.denominator <= 7) values.add(valueThisWeek / 1e3)
+                values.add(valueThisMonth / 1e3)
+                values.add(valueThisQuarter / 1e3)
+                values.add(valueThisYear / 1e3)
+            } else {
+                if (habit.frequency.denominator <= 1) values.add(valueToday / 1e3 + dailyTarget * skippedDayToday)
+                if (habit.frequency.denominator <= 7) values.add((valueThisWeek / 1e3 + dailyTarget * skippedDaysThisWeek) / daysThisWeek)
+                values.add((valueThisMonth / 1e3 + dailyTarget * skippedDaysThisMonth) / daysThisMonth)
+                values.add((valueThisQuarter / 1e3 + dailyTarget * skippedDaysThisQuarter) / daysThisQuarter)
+                values.add((valueThisYear / 1e3 + dailyTarget * skippedDaysThisYear) / daysThisYear)
+            }
 
             val targets = mutableListOf<Double>()
-            if (habit.frequency.denominator <= 1) targets.add(targetToday)
-            if (habit.frequency.denominator <= 7) targets.add(targetThisWeek)
-            targets.add(targetThisMonth)
-            targets.add(targetThisQuarter)
-            targets.add(targetThisYear)
+            if (spinnerPosition == 0) {
+                if (habit.frequency.denominator <= 1) targets.add(targetToday)
+                if (habit.frequency.denominator <= 7) targets.add(targetThisWeek)
+                targets.add(targetThisMonth)
+                targets.add(targetThisQuarter)
+                targets.add(targetThisYear)
+            } else {
+                if (habit.frequency.denominator <= 1) targets.add(dailyTarget)
+                if (habit.frequency.denominator <= 7) targets.add(dailyTarget)
+                targets.add(dailyTarget)
+                targets.add(dailyTarget)
+                targets.add(dailyTarget)
+            }
 
             val intervals = mutableListOf<Int>()
             if (habit.frequency.denominator <= 1) intervals.add(1)
