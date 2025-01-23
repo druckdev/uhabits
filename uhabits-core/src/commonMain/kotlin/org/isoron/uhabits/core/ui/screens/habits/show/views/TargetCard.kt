@@ -157,33 +157,61 @@ class TargetCardPresenter(
             targetThisYear = max(0.0, targetThisYear - dailyTarget * skippedDaysThisYear)
 
             val values = mutableListOf<Double>()
+            val targets = mutableListOf<Double>()
+
             if (spinnerPosition == 0) {
-                if (habit.frequency.denominator <= 1) values.add(valueToday / 1e3)
-                if (habit.frequency.denominator <= 7) values.add(valueThisWeek / 1e3)
+                if (habit.frequency.denominator <= 1) {
+                    values.add(valueToday / 1e3)
+                    targets.add(targetToday)
+                }
+                if (habit.frequency.denominator <= 7) {
+                    values.add(valueThisWeek / 1e3)
+                    targets.add(targetThisWeek)
+                }
+
                 values.add(valueThisMonth / 1e3)
                 values.add(valueThisQuarter / 1e3)
                 values.add(valueThisYear / 1e3)
-            } else {
-                if (habit.frequency.denominator <= 1) values.add(valueToday / 1e3 + dailyTarget * skippedDayToday)
-                if (habit.frequency.denominator <= 7) values.add((valueThisWeek / 1e3 + dailyTarget * skippedDaysThisWeek) / daysThisWeek)
-                values.add((valueThisMonth / 1e3 + dailyTarget * skippedDaysThisMonth) / daysThisMonth)
-                values.add((valueThisQuarter / 1e3 + dailyTarget * skippedDaysThisQuarter) / daysThisQuarter)
-                values.add((valueThisYear / 1e3 + dailyTarget * skippedDaysThisYear) / daysThisYear)
-            }
 
-            val targets = mutableListOf<Double>()
-            if (spinnerPosition == 0) {
-                if (habit.frequency.denominator <= 1) targets.add(targetToday)
-                if (habit.frequency.denominator <= 7) targets.add(targetThisWeek)
                 targets.add(targetThisMonth)
                 targets.add(targetThisQuarter)
                 targets.add(targetThisYear)
             } else {
-                if (habit.frequency.denominator <= 1) targets.add(dailyTarget)
-                if (habit.frequency.denominator <= 7) targets.add(dailyTarget)
-                targets.add(dailyTarget)
-                targets.add(dailyTarget)
-                targets.add(dailyTarget)
+                if (habit.frequency.denominator <= 1) {
+                    values.add(valueToday / 1e3)
+                    targets.add(if (skippedDayToday == 1) 0.0 else dailyTarget)
+                }
+                if (habit.frequency.denominator <= 7) {
+                    if (daysThisWeek == skippedDaysThisWeek) {
+                        values.add(0.0)
+                        targets.add(0.0)
+                    } else {
+                        values.add(valueThisWeek / 1e3 / (daysThisWeek - skippedDaysThisWeek))
+                        targets.add(dailyTarget)
+                    }
+                }
+
+                if (daysThisMonth == skippedDaysThisMonth) {
+                    values.add(0.0)
+                    targets.add(0.0)
+                } else {
+                    values.add(valueThisMonth / 1e3 / (daysThisMonth - skippedDaysThisMonth))
+                    targets.add(dailyTarget)
+                }
+                if (daysThisQuarter == skippedDaysThisQuarter) {
+                    values.add(0.0)
+                    targets.add(0.0)
+                } else {
+                    values.add(valueThisQuarter / 1e3 / (daysThisQuarter - skippedDaysThisQuarter))
+                    targets.add(dailyTarget)
+                }
+                if (daysThisYear == skippedDaysThisYear) {
+                    values.add(0.0)
+                    targets.add(0.0)
+                } else {
+                    values.add(valueThisYear / 1e3 / (daysThisYear - skippedDaysThisYear))
+                    targets.add(dailyTarget)
+                }
             }
 
             val intervals = mutableListOf<Int>()
