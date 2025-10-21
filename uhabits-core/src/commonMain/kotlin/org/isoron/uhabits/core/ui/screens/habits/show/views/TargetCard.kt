@@ -53,172 +53,95 @@ class TargetCardPresenter(
             val oldest = habit.computedEntries.getKnown().lastOrNull()?.date ?: today
             val entries = habit.computedEntries.getByInterval(oldest, today)
 
-            val valueToday = entries.groupedSum(
-                truncateField = TruncateField.DAY,
-                isNumerical = habit.isNumerical
-            ).firstOrNull()?.value ?: 0
+            // TODO; have a look at ScoreCard's getTruncateField
+            val periods = arrayOf(
+                TruncateField.DAY,
+                TruncateField.WEEK_NUMBER,
+                TruncateField.MONTH,
+                TruncateField.QUARTER,
+                TruncateField.YEAR
+            )
 
-            val skippedDayToday = entries.countSkippedDays(
-                truncateField = TruncateField.DAY
-            ).firstOrNull()?.value ?: 0
+            val valueThisPeriod = IntArray(periods.size)
+            val daysThisPeriod = IntArray(periods.size)
+            val skippedDaysThisPeriod = IntArray(periods.size)
 
-            val valueThisWeek = entries.groupedSum(
-                truncateField = TruncateField.WEEK_NUMBER,
-                firstWeekday = firstWeekday,
-                isNumerical = habit.isNumerical
-            ).firstOrNull()?.value ?: 0
+            for ((i, truncateField) in periods.withIndex()) {
+                valueThisPeriod[i] = entries.groupedSum(
+                    truncateField = truncateField,
+                    firstWeekday = firstWeekday,
+                    isNumerical = habit.isNumerical
+                ).firstOrNull()?.value ?: 0
 
-            val skippedDaysThisWeek = entries.countSkippedDays(
-                truncateField = TruncateField.WEEK_NUMBER,
-                firstWeekday = firstWeekday
-            ).firstOrNull()?.value ?: 0
-            val daysThisWeek = today.truncate(
-                field = DateUtils.TruncateField.WEEK_NUMBER,
-                firstWeekday = firstWeekday
-            ).daysUntil(today) + 1
+                // TODO: is this 1 at index 0, i.e. "daysToday"?
+                daysThisPeriod[i] = today.truncate(
+                    field = truncateField,
+                    firstWeekday = firstWeekday
+                ).daysUntil(today) + 1
 
-            val valueThisMonth = entries.groupedSum(
-                truncateField = TruncateField.MONTH,
-                isNumerical = habit.isNumerical
-            ).firstOrNull()?.value ?: 0
-
-            val skippedDaysThisMonth = entries.countSkippedDays(
-                truncateField = TruncateField.MONTH
-            ).firstOrNull()?.value ?: 0
-            val daysThisMonth = today.truncate(
-                field = DateUtils.TruncateField.MONTH,
-                firstWeekday = firstWeekday
-            ).daysUntil(today) + 1
-
-            val valueThisQuarter = entries.groupedSum(
-                truncateField = TruncateField.QUARTER,
-                isNumerical = habit.isNumerical
-            ).firstOrNull()?.value ?: 0
-
-            val skippedDaysThisQuarter = entries.countSkippedDays(
-                truncateField = TruncateField.QUARTER
-            ).firstOrNull()?.value ?: 0
-            val daysThisQuarter = today.truncate(
-                field = DateUtils.TruncateField.QUARTER,
-                firstWeekday = firstWeekday
-            ).daysUntil(today) + 1
-
-            val valueThisYear = entries.groupedSum(
-                truncateField = TruncateField.YEAR,
-                isNumerical = habit.isNumerical
-            ).firstOrNull()?.value ?: 0
-
-            val skippedDaysThisYear = entries.countSkippedDays(
-                truncateField = TruncateField.YEAR
-            ).firstOrNull()?.value ?: 0
-            val daysThisYear = today.truncate(
-                field = DateUtils.TruncateField.YEAR,
-                firstWeekday = firstWeekday
-            ).daysUntil(today) + 1
+                skippedDaysThisPeriod[i] = entries.countSkippedDays(
+                    truncateField = truncateField,
+                    firstWeekday = firstWeekday // TODO: do we need this?
+                ).firstOrNull()?.value ?: 0
+            }
 
             val daysInMonth = today.monthLength
-            val daysInWeek = 7
-            val daysInQuarter = 91
             val daysInYear = today.yearLength
-            val weeksInMonth = daysInMonth / 7
-            val weeksInQuarter = 13
-            val weeksInYear = 52
-            val monthsInQuarter = 3
-            val monthsInYear = 12
+
+            val daysInPeriod = intArrayOf(
+                1,
+                7,
+                daysInMonth,
+                91,
+                daysInYear
+            )
 
             val denominator = habit.frequency.denominator
-            val dailyTarget = habit.targetValue / habit.frequency.denominator
+            if (denominator == 30) {
+                denominator = daysInMonth
+            }
+            val dailyTarget = habit.targetValue / denominator
 
-            var targetToday = dailyTarget
-            var targetThisWeek = when (denominator) {
-                7 -> habit.targetValue
-                else -> dailyTarget * daysInWeek
+            // val denominators = intArrayOf(1, 7, 31, 92, 365)
+            // val denominators = intArrayOf(1, 7, 30, 91, 365)
+            var targetThisPeriod = DoubleArray(daysInPeriod.size)
+            for ((i, n) in daysInPeriod.withIndex()) {
+                targetThisPeriod[i] = max(
+                    0.0,
+                    dailyTarget * n - dailyTarget * skippedDaysThisPeriod[i]
+                )
             }
-            var targetThisMonth = when (denominator) {
-                30 -> habit.targetValue
-                7 -> habit.targetValue * weeksInMonth
-                else -> dailyTarget * daysInMonth
-            }
-            var targetThisQuarter = when (denominator) {
-                30 -> habit.targetValue * monthsInQuarter
-                7 -> habit.targetValue * weeksInQuarter
-                else -> dailyTarget * daysInQuarter
-            }
-            var targetThisYear = when (denominator) {
-                30 -> habit.targetValue * monthsInYear
-                7 -> habit.targetValue * weeksInYear
-                else -> dailyTarget * daysInYear
-            }
-
-            targetToday = max(0.0, targetToday - dailyTarget * skippedDayToday)
-            targetThisWeek = max(0.0, targetThisWeek - dailyTarget * skippedDaysThisWeek)
-            targetThisMonth = max(0.0, targetThisMonth - dailyTarget * skippedDaysThisMonth)
-            targetThisQuarter = max(0.0, targetThisQuarter - dailyTarget * skippedDaysThisQuarter)
-            targetThisYear = max(0.0, targetThisYear - dailyTarget * skippedDaysThisYear)
 
             val values = mutableListOf<Double>()
             val targets = mutableListOf<Double>()
 
-            if (spinnerPosition == 0) {
-                if (habit.frequency.denominator <= 1) {
-                    values.add(valueToday / 1e3)
-                    targets.add(targetToday)
+            for (i in 0..daysInPeriod.size) {
+                if (denominator > daysInPeriod[i]) {
+                    continue
                 }
-                if (habit.frequency.denominator <= 7) {
-                    values.add(valueThisWeek / 1e3)
-                    targets.add(targetThisWeek)
-                }
-
-                values.add(valueThisMonth / 1e3)
-                values.add(valueThisQuarter / 1e3)
-                values.add(valueThisYear / 1e3)
-
-                targets.add(targetThisMonth)
-                targets.add(targetThisQuarter)
-                targets.add(targetThisYear)
-            } else {
-                if (habit.frequency.denominator <= 1) {
-                    values.add(valueToday / 1e3)
-                    targets.add(if (skippedDayToday == 1) 0.0 else dailyTarget)
-                }
-                if (habit.frequency.denominator <= 7) {
-                    if (daysThisWeek == skippedDaysThisWeek) {
+                if (spinnerPosition == 0) {
+                    // sum
+                    values.add(valueThisPeriod[i] / 1e3)
+                    targets.add(targetThisPeriod[i])
+                } else {
+                    // average
+                    if (daysThisPeriod[i] == skippedDaysThisPeriod[i]) {
                         values.add(0.0)
                         targets.add(0.0)
                     } else {
-                        values.add(valueThisWeek / 1e3 / (daysThisWeek - skippedDaysThisWeek))
-                        targets.add(dailyTarget)
+                        values.add(valueThisPeriod[i] / 1e3 / (daysThisPeriod[i] - skippedDaysThisPeriod[i]) * denominator)
+                        targets.add(habit.targetValue)
                     }
-                }
-
-                if (daysThisMonth == skippedDaysThisMonth) {
-                    values.add(0.0)
-                    targets.add(0.0)
-                } else {
-                    values.add(valueThisMonth / 1e3 / (daysThisMonth - skippedDaysThisMonth))
-                    targets.add(dailyTarget)
-                }
-                if (daysThisQuarter == skippedDaysThisQuarter) {
-                    values.add(0.0)
-                    targets.add(0.0)
-                } else {
-                    values.add(valueThisQuarter / 1e3 / (daysThisQuarter - skippedDaysThisQuarter))
-                    targets.add(dailyTarget)
-                }
-                if (daysThisYear == skippedDaysThisYear) {
-                    values.add(0.0)
-                    targets.add(0.0)
-                } else {
-                    values.add(valueThisYear / 1e3 / (daysThisYear - skippedDaysThisYear))
-                    targets.add(dailyTarget)
                 }
             }
 
             val intervals = mutableListOf<Int>()
-            if (habit.frequency.denominator <= 1) intervals.add(1)
-            if (habit.frequency.denominator <= 7) intervals.add(7)
+            if (denominator <= 1) intervals.add(1)
+            if (denominator <= 7) intervals.add(7)
+            // TODO: daysInMonth?
             intervals.add(30)
             intervals.add(91)
+            // TODO: daysInYear?
             intervals.add(365)
 
             return TargetCardState(
