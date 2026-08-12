@@ -96,15 +96,15 @@ class TargetCardPresenter(
                 daysInYear
             )
 
-            val denominator = habit.frequency.denominator
-            if (denominator == 30) {
-                denominator = daysInMonth
+            val denominator = when (habit.frequency.denominator) {
+                30 -> daysInMonth
+                else -> habit.frequency.denominator
             }
             val dailyTarget = habit.targetValue / denominator
 
             // val denominators = intArrayOf(1, 7, 31, 92, 365)
             // val denominators = intArrayOf(1, 7, 30, 91, 365)
-            var targetThisPeriod = DoubleArray(daysInPeriod.size)
+            val targetThisPeriod = DoubleArray(daysInPeriod.size)
             for ((i, n) in daysInPeriod.withIndex()) {
                 targetThisPeriod[i] = max(
                     0.0,
@@ -115,7 +115,7 @@ class TargetCardPresenter(
             val values = mutableListOf<Double>()
             val targets = mutableListOf<Double>()
 
-            for (i in 0..daysInPeriod.size) {
+            for (i in 0..<daysInPeriod.size) {
                 if (denominator > daysInPeriod[i]) {
                     continue
                 }
