@@ -95,6 +95,13 @@ data class LocalDate(val daysSince2000: Int) : Comparable<LocalDate> {
             else -> 31
         }
 
+   val quarterLength: Int
+        get() = when (month) {
+            1, 2, 3 -> if (isLeapYear(year)) 91 else 90
+            4, 5, 6 -> 91
+            else -> 92
+        }
+
     val yearLength: Int
         get() = if (isLeapYear(year)) 366 else 365
 

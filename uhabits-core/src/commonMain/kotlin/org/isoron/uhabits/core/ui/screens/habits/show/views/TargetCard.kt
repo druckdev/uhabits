@@ -47,113 +47,51 @@ class TargetCardPresenter {
             val oldest = habit.computedEntries.getKnown().lastOrNull()?.date ?: today
             val entries = habit.computedEntries.getByInterval(oldest, today)
 
-            val valueToday = entries.groupedSum(
-                truncateField = TruncateField.DAY,
-                isNumerical = habit.isNumerical
-            ).firstOrNull()?.value ?: 0
+            // NOTE: these must have the same size as TruncateField.values()
+            val daysInPeriod = arrayOf(1, 7, today.monthLength, today.quarterLength, today.yearLength)
+            val monthsInPeriod = arrayOf(1/today.monthLength, 7/today.monthLength, 1, 3, 12)
 
-            val skippedDayToday = entries.countSkippedDays(
-                truncateField = TruncateField.DAY
-            ).firstOrNull()?.value ?: 0
-
-            val valueThisWeek = entries.groupedSum(
-                truncateField = TruncateField.WEEK_NUMBER,
-                firstWeekday = firstWeekday,
-                isNumerical = habit.isNumerical
-            ).firstOrNull()?.value ?: 0
-
-            val skippedDaysThisWeek = entries.countSkippedDays(
-                truncateField = TruncateField.WEEK_NUMBER,
-                firstWeekday = firstWeekday
-            ).firstOrNull()?.value ?: 0
-
-            val valueThisMonth = entries.groupedSum(
-                truncateField = TruncateField.MONTH,
-                isNumerical = habit.isNumerical
-            ).firstOrNull()?.value ?: 0
-
-            val skippedDaysThisMonth = entries.countSkippedDays(
-                truncateField = TruncateField.MONTH
-            ).firstOrNull()?.value ?: 0
-
-            val valueThisQuarter = entries.groupedSum(
-                truncateField = TruncateField.QUARTER,
-                isNumerical = habit.isNumerical
-            ).firstOrNull()?.value ?: 0
-
-            val skippedDaysThisQuarter = entries.countSkippedDays(
-                truncateField = TruncateField.QUARTER
-            ).firstOrNull()?.value ?: 0
-
-            val valueThisYear = entries.groupedSum(
-                truncateField = TruncateField.YEAR,
-                isNumerical = habit.isNumerical
-            ).firstOrNull()?.value ?: 0
-
-            val skippedDaysThisYear = entries.countSkippedDays(
-                truncateField = TruncateField.YEAR
-            ).firstOrNull()?.value ?: 0
-
-            val daysInMonth = today.monthLength
-            val daysInWeek = 7
-            val daysInQuarter = 91
-            val daysInYear = today.yearLength
-            val weeksInMonth = daysInMonth / 7
-            val weeksInQuarter = 13
-            val weeksInYear = 52
-            val monthsInQuarter = 3
-            val monthsInYear = 12
-
-            val denominator = habit.frequency.denominator
-            val dailyTarget = habit.targetValue / denominator
-
-            var targetToday = dailyTarget
-            var targetThisWeek = when (denominator) {
-                7 -> habit.targetValue
-                else -> dailyTarget * daysInWeek
+            val denominator = when (habit.frequency.denominator) {
+                30 -> daysInPeriod[TruncateField.MONTH.ordinal]
+                else -> habit.frequency.denominator
             }
-            var targetThisMonth = when (denominator) {
-                30 -> habit.targetValue
-                7 -> habit.targetValue * weeksInMonth
-                else -> dailyTarget * daysInMonth
-            }
-            var targetThisQuarter = when (denominator) {
-                30 -> habit.targetValue * monthsInQuarter
-                7 -> habit.targetValue * weeksInQuarter
-                else -> dailyTarget * daysInQuarter
-            }
-            var targetThisYear = when (denominator) {
-                30 -> habit.targetValue * monthsInYear
-                7 -> habit.targetValue * weeksInYear
-                else -> dailyTarget * daysInYear
-            }
-
-            targetToday = max(0.0, targetToday - dailyTarget * skippedDayToday)
-            targetThisWeek = max(0.0, targetThisWeek - dailyTarget * skippedDaysThisWeek)
-            targetThisMonth = max(0.0, targetThisMonth - dailyTarget * skippedDaysThisMonth)
-            targetThisQuarter = max(0.0, targetThisQuarter - dailyTarget * skippedDaysThisQuarter)
-            targetThisYear = max(0.0, targetThisYear - dailyTarget * skippedDaysThisYear)
 
             val values = mutableListOf<Double>()
-            if (denominator <= 1) values.add(valueToday / 1e3)
-            if (denominator <= 7) values.add(valueThisWeek / 1e3)
-            values.add(valueThisMonth / 1e3)
-            values.add(valueThisQuarter / 1e3)
-            values.add(valueThisYear / 1e3)
-
             val targets = mutableListOf<Double>()
-            if (denominator <= 1) targets.add(targetToday)
-            if (denominator <= 7) targets.add(targetThisWeek)
-            targets.add(targetThisMonth)
-            targets.add(targetThisQuarter)
-            targets.add(targetThisYear)
-
             val intervals = mutableListOf<Int>()
-            if (denominator <= 1) intervals.add(1)
-            if (denominator <= 7) intervals.add(7)
-            intervals.add(30)
-            intervals.add(91)
-            intervals.add(365)
+
+            for ((i, timePeriod) in TruncateField.entries.withIndex()) {
+                if (denominator > daysInPeriod[i])
+                    continue
+
+                val value = entries.groupedSum(
+                    truncateField = timePeriod,
+                    firstWeekday = firstWeekday,
+                    isNumerical = habit.isNumerical
+                ).firstOrNull()?.value ?: 0
+
+                val skippedDays = entries.countSkippedDays(
+                    truncateField = timePeriod,
+                    firstWeekday = firstWeekday
+                ).firstOrNull()?.value ?: 0
+
+                var target = when (habit.frequency.denominator) {
+                    30 -> habit.targetValue * monthsInPeriod[i]
+                    7 -> habit.targetValue/7 * daysInPeriod[i]
+                    else -> habit.targetValue * daysInPeriod[i]
+                }
+                // FIXME: Even though the daily target for a monthly habit
+                //   changes depending on the length of the current month, skip
+                //   days contribute the average over 3/12 months to the
+                //   quarter/year targets. This is only a slight inaccuracy and
+                //   to correct it we would need to look up the length of the
+                //   month of each skip day, so maybe not worth it.
+                target = max(0.0, target - target/daysInPeriod[i] * skippedDays)
+
+                values.add(value / 1e3)
+                targets.add(target)
+                intervals.add(daysInPeriod[i])
+            }
 
             return TargetCardState(
                 color = habit.color,
