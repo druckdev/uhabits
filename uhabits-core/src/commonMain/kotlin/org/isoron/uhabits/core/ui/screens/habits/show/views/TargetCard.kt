@@ -105,7 +105,7 @@ class TargetCardPresenter {
             val monthsInYear = 12
 
             val denominator = habit.frequency.denominator
-            val dailyTarget = habit.targetValue / habit.frequency.denominator
+            val dailyTarget = habit.targetValue / denominator
 
             var targetToday = dailyTarget
             var targetThisWeek = when (denominator) {
@@ -135,22 +135,22 @@ class TargetCardPresenter {
             targetThisYear = max(0.0, targetThisYear - dailyTarget * skippedDaysThisYear)
 
             val values = mutableListOf<Double>()
-            if (habit.frequency.denominator <= 1) values.add(valueToday / 1e3)
-            if (habit.frequency.denominator <= 7) values.add(valueThisWeek / 1e3)
+            if (denominator <= 1) values.add(valueToday / 1e3)
+            if (denominator <= 7) values.add(valueThisWeek / 1e3)
             values.add(valueThisMonth / 1e3)
             values.add(valueThisQuarter / 1e3)
             values.add(valueThisYear / 1e3)
 
             val targets = mutableListOf<Double>()
-            if (habit.frequency.denominator <= 1) targets.add(targetToday)
-            if (habit.frequency.denominator <= 7) targets.add(targetThisWeek)
+            if (denominator <= 1) targets.add(targetToday)
+            if (denominator <= 7) targets.add(targetThisWeek)
             targets.add(targetThisMonth)
             targets.add(targetThisQuarter)
             targets.add(targetThisYear)
 
             val intervals = mutableListOf<Int>()
-            if (habit.frequency.denominator <= 1) intervals.add(1)
-            if (habit.frequency.denominator <= 7) intervals.add(7)
+            if (denominator <= 1) intervals.add(1)
+            if (denominator <= 7) intervals.add(7)
             intervals.add(30)
             intervals.add(91)
             intervals.add(365)
