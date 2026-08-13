@@ -174,6 +174,18 @@ data class LocalDate(val daysSince2000: Int) : Comparable<LocalDate> {
 
     fun startOfYear(): LocalDate = LocalDate(year, 1, 1)
 
+    // TODO: bring back all the tests that were removed in 0544166124bb (Replace
+    //   Timestamp with LocalDate, 2026-04-05)
+    fun truncate(field: TruncateField, firstWeekday: DayOfWeek): LocalDate {
+        return when (field) {
+            TruncateField.DAY -> this
+            TruncateField.WEEK_NUMBER -> startOfWeek(firstWeekday)
+            TruncateField.MONTH -> startOfMonth()
+            TruncateField.QUARTER -> startOfQuarter()
+            TruncateField.YEAR -> startOfYear()
+        }
+    }
+
     fun toCSVString(): String {
         val y = year.toString().padStart(4, '0')
         val m = month.toString().padStart(2, '0')

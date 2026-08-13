@@ -268,20 +268,6 @@ open class EntryList {
     }
 }
 
-private fun truncateDate(
-    date: LocalDate,
-    field: TruncateField,
-    firstWeekday: DayOfWeek
-): LocalDate {
-    return when (field) {
-        TruncateField.DAY -> date
-        TruncateField.WEEK_NUMBER -> date.startOfWeek(firstWeekday)
-        TruncateField.MONTH -> date.startOfMonth()
-        TruncateField.QUARTER -> date.startOfQuarter()
-        TruncateField.YEAR -> date.startOfYear()
-    }
-}
-
 /**
  * Given a list of entries, truncates the date of each entry (according to the field given),
  * groups the entries according to this truncated date, then creates a new entry (d,v) for
@@ -316,7 +302,7 @@ fun List<Entry>.groupedSum(
             Entry(date, if (value == YES_MANUAL) 1000 else 0)
         }
     }.groupBy { entry ->
-        truncateDate(entry.date, truncateField, firstWeekdayEnum)
+        entry.date.truncate(truncateField, firstWeekdayEnum)
     }.entries.map { (date, entries) ->
         Entry(date, entries.sumOf { it.value })
     }.sortedBy { (date, _) ->
@@ -339,7 +325,7 @@ fun List<Entry>.countSkippedDays(
             Entry(date, 0)
         }
     }.groupBy { entry ->
-        truncateDate(entry.date, truncateField, firstWeekdayEnum)
+        entry.date.truncate(truncateField, firstWeekdayEnum)
     }.entries.map { (date, entries) ->
         Entry(date, entries.sumOf { it.value })
     }.sortedBy { (date, _) ->

@@ -19,6 +19,7 @@
 
 package org.isoron.uhabits.core.ui.screens.habits.show.views
 
+import org.isoron.platform.time.DayOfWeek
 import org.isoron.platform.time.LocalDate
 import org.isoron.platform.time.TruncateField
 import org.isoron.platform.time.getToday
@@ -62,9 +63,12 @@ class ScoreCardPresenter(
             val bucketSize = BUCKET_SIZES[spinnerPosition]
             val today = getToday()
             val oldest = habit.computedEntries.getKnown().lastOrNull()?.date ?: today
+            // firstWeekday: 1=Sunday, 2=Monday, ..., 7=Saturday
+            // DayOfWeek enum: SUNDAY(0), MONDAY(1), ..., SATURDAY(6)
+            val firstWeekdayDow = DayOfWeek.entries[firstWeekday - 1]
 
             val scores = habit.scores.getByInterval(oldest, today).groupBy { score ->
-                truncateDate(getTruncateField(bucketSize), score.date, firstWeekday)
+                score.date.truncate(getTruncateField(bucketSize), firstWeekdayDow)
             }.map { (date, scores) ->
                 Score(
                     date,
@@ -84,24 +88,6 @@ class ScoreCardPresenter(
                 theme = theme
             )
         }
-
-        private fun truncateDate(
-            field: TruncateField,
-            date: LocalDate,
-            firstWeekday: Int
-        ): LocalDate {
-            // firstWeekday: 1=Sunday, 2=Monday, ..., 7=Saturday
-            // DayOfWeek enum: SUNDAY(0), MONDAY(1), ..., SATURDAY(6)
-            val firstWeekdayDow = org.isoron.platform.time.DayOfWeek.entries[firstWeekday - 1]
-            return when (field) {
-                TruncateField.WEEK_NUMBER -> date.startOfWeek(firstWeekdayDow)
-                TruncateField.MONTH -> date.startOfMonth()
-                TruncateField.QUARTER -> date.startOfQuarter()
-                TruncateField.YEAR -> date.startOfYear()
-                else -> date
-            }
-        }
-    }
 
     fun onSpinnerPosition(position: Int) {
         preferences.scoreCardSpinnerPosition = position
